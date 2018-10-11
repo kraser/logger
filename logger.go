@@ -3,7 +3,9 @@ package logger
 
 import (
 	"fmt"
-	//"log"
+	"log"
+	"os"
+	"regexp"
 	"runtime"
 )
 
@@ -15,6 +17,7 @@ func createLogLevels() {
 		levels = make(map[string]int)
 		levels["debug"] = 1
 		levels["info"] = 2
+		levels["error"] = 3
 	}
 }
 
@@ -41,6 +44,13 @@ func Debug(v ...interface{}) {
 	}
 }
 
+func Error(v ...interface{}) {
+	createLogLevels()
+	if levels["error"] >= logLevel {
+		log.Output(1, fmt.Sprintln(v...))
+	}
+}
+
 func caller(calldepth int) (string, int) {
 	var ok bool
 	_, file, line, ok := runtime.Caller(calldepth)
@@ -50,3 +60,25 @@ func caller(calldepth int) (string, int) {
 	}
 	return file, line
 }
+
+func CheckHtml(rawUrl string, html string, level string) {
+	createLogLevels()
+
+	if levels[level] >= logLevel {
+		re := regexp.MustCompile("[^a-zA-Z0-9]+")
+		fileName := "/home/robot/" + re.ReplaceAllString(rawUrl, "_")
+		fileHandler, err := os.OpenFile(fileName, os.O_APPEND|os.O_CREATE|os.O_RDWR, 0666)
+		errorHandle(err)
+		defer fileHandler.Close()
+		fileHandler.Truncate(0)
+		fileHandler.WriteString(html)
+		Debug(len(html))
+	}
+}
+
+func errorHandle(e error) {
+	if e != nil {
+		panic(e)
+	}
+}
+
