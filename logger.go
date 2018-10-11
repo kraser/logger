@@ -2,6 +2,7 @@
 package logger
 
 import (
+	"bytes"
 	"fmt"
 	"log"
 	"os"
@@ -11,6 +12,7 @@ import (
 
 var logLevel int = 2
 var levels map[string]int
+var mylogger = new(log.Logger)
 
 func createLogLevels() {
 	if len(levels) == 0 {
@@ -31,6 +33,7 @@ func SetLogLevel(level string) {
 func Info(v ...interface{}) {
 	createLogLevels()
 	if levels["info"] >= logLevel {
+		mylogger.Output(1, fmt.Sprintln(v...))
 		file, line := caller(2)
 		fmt.Print(file+":", line, " ", fmt.Sprintln(v...))
 	}
@@ -47,7 +50,8 @@ func Debug(v ...interface{}) {
 func Error(v ...interface{}) {
 	createLogLevels()
 	if levels["error"] >= logLevel {
-		log.Output(1, fmt.Sprintln(v...))
+		file, line := caller(2)
+		fmt.Print(file+":", line, " ", fmt.Sprintln(v...))
 	}
 }
 
@@ -81,4 +85,3 @@ func errorHandle(e error) {
 		panic(e)
 	}
 }
-
