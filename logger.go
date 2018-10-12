@@ -5,12 +5,32 @@ import (
 	errs "errorshandler"
 	"fmt"
 	"os"
+	"path"
 	"regexp"
 	"runtime"
+	"time"
+
+	logrus "github.com/sirupsen/logrus"
 )
 
 var logLevel int = 2
 var levels map[string]int
+
+type KsiLogger struct {
+	logger   *logrus.Logger
+	loglevel int
+	prefix   string
+}
+
+var logger = new(KsiLogger)
+var isInited bool = false
+
+func (log *KsiLogger) Output(v ...interface{}) {
+	file, line := caller(3)
+	now := time.Now()
+
+	fmt.Print(now.Format("01-02-2006 15:04:05"), " ", path.Base(file)+":", line, " ", fmt.Sprintln(v...))
+}
 
 func createLogLevels() {
 	if len(levels) == 0 {
@@ -18,37 +38,42 @@ func createLogLevels() {
 		levels["debug"] = 1
 		levels["info"] = 2
 		levels["error"] = 3
+		logger.logger = logrus.New()
+		isInited = true
 	}
 }
 
 func SetLogLevel(level string) {
 	createLogLevels()
 	if theLevel, ok := levels[level]; ok {
-		logLevel = theLevel
+
+		logger.loglevel = theLevel
+		logrusLevel, err := logrus.ParseLevel(level)
+		if err == nil {
+			logLevel = theLevel
+			logger.logger.Level = logrusLevel
+		}
+		_, file, _, _ := runtime.Caller(1)
+		fmt.Println(file)
+
 	}
 }
 
 func Info(v ...interface{}) {
-	createLogLevels()
-	if levels["info"] >= logLevel {
-		file, line := caller(2)
-		fmt.Print(file+":", line, " ", fmt.Sprintln(v...))
+	if isLevelEnabled("info") {
+		logger.Output(v...)
 	}
 }
 
 func Debug(v ...interface{}) {
-	createLogLevels()
-	if levels["debug"] >= logLevel {
-		file, line := caller(2)
-		fmt.Print(file+":", line, " ", fmt.Sprintln(v...))
+	if isLevelEnabled("debug") {
+		logger.Output(v...)
 	}
 }
 
 func Error(v ...interface{}) {
-	createLogLevels()
-	if levels["error"] >= logLevel {
-		file, line := caller(2)
-		fmt.Print(file+":", line, " ", fmt.Sprintln(v...))
+	if isLevelEnabled("error") {
+		logger.Output(v...)
 	}
 }
 
@@ -73,6 +98,13 @@ func CheckHtml(rawUrl string, html string, level string) {
 		defer fileHandler.Close()
 		fileHandler.Truncate(0)
 		fileHandler.WriteString(html)
-		Debug(len(html))
 	}
+}
+
+func isLevelEnabled(level string) bool {
+	if !isInited {
+		createLogLevels()
+	}
+
+	return levels[level] >= logger.loglevel
 }
