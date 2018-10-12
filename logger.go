@@ -2,8 +2,8 @@
 package logger
 
 import (
+	errs "errorshandler"
 	"fmt"
-	"log"
 	"os"
 	"regexp"
 	"runtime"
@@ -11,7 +11,6 @@ import (
 
 var logLevel int = 2
 var levels map[string]int
-var mylogger = new(log.Logger)
 
 func createLogLevels() {
 	if len(levels) == 0 {
@@ -32,7 +31,6 @@ func SetLogLevel(level string) {
 func Info(v ...interface{}) {
 	createLogLevels()
 	if levels["info"] >= logLevel {
-		mylogger.Output(1, fmt.Sprintln(v...))
 		file, line := caller(2)
 		fmt.Print(file+":", line, " ", fmt.Sprintln(v...))
 	}
@@ -71,16 +69,10 @@ func CheckHtml(rawUrl string, html string, level string) {
 		re := regexp.MustCompile("[^a-zA-Z0-9]+")
 		fileName := "/home/robot/" + re.ReplaceAllString(rawUrl, "_")
 		fileHandler, err := os.OpenFile(fileName, os.O_APPEND|os.O_CREATE|os.O_RDWR, 0666)
-		errorHandle(err)
+		errs.ErrorHandle(err)
 		defer fileHandler.Close()
 		fileHandler.Truncate(0)
 		fileHandler.WriteString(html)
 		Debug(len(html))
-	}
-}
-
-func errorHandle(e error) {
-	if e != nil {
-		panic(e)
 	}
 }
