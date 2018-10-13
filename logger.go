@@ -8,6 +8,7 @@ import (
 	"path"
 	"regexp"
 	"runtime"
+	"strings"
 	"time"
 
 	logrus "github.com/sirupsen/logrus"
@@ -16,20 +17,34 @@ import (
 var logLevel int = 2
 var levels map[string]int
 
+var FilenameLengts = []string{
+	"filename",
+	"shortpath",
+	"fullpath",
+}
+
 type KsiLogger struct {
-	logger   *logrus.Logger
-	loglevel int
-	prefix   string
+	logger         *logrus.Logger
+	loglevel       int
+	lengthFilename string
 }
 
 var logger = new(KsiLogger)
 var isInited bool = false
 
 func (log *KsiLogger) Output(v ...interface{}) {
-	file, line := caller(3)
+	pathfile, line := caller(3)
 	now := time.Now()
-
-	fmt.Print(now.Format("01-02-2006 15:04:05"), " ", path.Base(file)+":", line, " ", fmt.Sprintln(v...))
+	var filename string
+	if log.lengthFilename == "fullpath" {
+		filename = pathfile
+	} else if log.lengthFilename == "shortpath" {
+		gopath := os.Getenv("GOPATH") + "/"
+		filename = strings.Replace(pathfile, gopath, "", -1)
+	} else {
+		filename = path.Base(pathfile)
+	}
+	fmt.Print(now.Format("01-02-2006 15:04:05"), " ", filename+":", line, " ", fmt.Sprintln(v...))
 }
 
 func createLogLevels() {
@@ -46,17 +61,14 @@ func createLogLevels() {
 func SetLogLevel(level string) {
 	createLogLevels()
 	if theLevel, ok := levels[level]; ok {
-
 		logger.loglevel = theLevel
 		logrusLevel, err := logrus.ParseLevel(level)
 		if err == nil {
 			logLevel = theLevel
 			logger.logger.Level = logrusLevel
 		}
-		_, file, _, _ := runtime.Caller(1)
-		fmt.Println(file)
-
 	}
+	logger.lengthFilename = "shortpath"
 }
 
 func Info(v ...interface{}) {
