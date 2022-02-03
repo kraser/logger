@@ -1,8 +1,7 @@
-// logger project logger.go
+// logger
 package logger
 
 import (
-	errs "errorshandler"
 	"fmt"
 	"os"
 	"path"
@@ -10,6 +9,8 @@ import (
 	"runtime"
 	"strings"
 	"time"
+
+	errs "github.com/kraser/errorshandler"
 
 	logrus "github.com/sirupsen/logrus"
 )
